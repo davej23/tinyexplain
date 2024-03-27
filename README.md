@@ -4,6 +4,8 @@ An Explainable AI Library for tinygrad
 
 Techniques adapted for tinygrad from [Xplique](https://github.com/deel-ai/xplique).
 
+**This library is a work in progress.**
+
 ## Supported Tasks
 
 - Object Detection [in alpha]
