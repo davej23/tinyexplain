@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "tinyexplain"
+version = "0.1.0"
+description = "Explainable AI Toolkit for tinygrad"
+authors = ["davej23"]
+license = "MIT"
+documentation = "https://github.com/davej23/tinyexplain/docs"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+tinygrad = ">=0.8"
+matplotlib = ">=3.8"
+opencv-python = ">=4.9"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^3.0.0"
+pytest = "^7.1.2"
+black = "^24.3"
+pylint = "^3.1"
+mypy = "^1.9"
+codecov = "^2.1.11"
+sphinx = "^5.0.1"
+sphinx-autodoc-typehints = "^1.11.1"
+
+[tool.black]
+line-length = 140
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
