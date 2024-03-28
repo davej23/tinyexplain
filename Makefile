@@ -3,6 +3,6 @@ isort:
 mypy:
 	python -m mypy --config-file=mypy.ini tinyexplain/
 pylint:
-	python -m pylint tinyexplain/
+	python -m pylint --rcfile pylintrc tinyexplain/
 black:
-	python -m black tinyexplain/
+	python -m black --config pyproject.toml .
