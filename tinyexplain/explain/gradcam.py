@@ -9,6 +9,8 @@ from tinyexplain.utils.overrides import (TINYGRAD_LAYERS, get_layer,
 
 from .explainer import Explainer
 
+import cv2
+
 
 class GradCam(Explainer):
     """GradCam Explainer"""
@@ -67,4 +69,5 @@ class GradCam(Explainer):
 
         revert_call(type(self.conv_layer))  # revert layer .call
 
+        grad_cams = Tensor.stack([Tensor(cv2.resize(grad_cam.numpy(), inputs.shape[len(inputs.shape)-2:]).T) for grad_cam in grad_cams])
         return grad_cams

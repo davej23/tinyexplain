@@ -16,7 +16,7 @@ def test_object_detection():
         Tensor.rand((1, 5, 1), dtype=dtypes.float32),
         yolov8_tbo
     )
-    assert explanation.shape == (1, 20, 20)
+    assert explanation.shape == (1, 640, 640)
 
 
 def test_image_classification():
@@ -27,7 +27,7 @@ def test_image_classification():
         Tensor.rand((1, 1)),
         lambda x: x
     )
-    assert explanation.shape == (1, 7, 7)
+    assert explanation.shape == (1, 28, 28)
 
 
 def test_tabular_data():
@@ -38,7 +38,7 @@ def test_tabular_data():
         Tensor.rand((1, 1, 1), dtype=dtypes.float32),
         lambda x: x
     )
-    assert explanation.shape == (1, 1, 16)
+    assert explanation.shape == (1, 1, 4)
 
 
 def test_time_series():
@@ -49,4 +49,4 @@ def test_time_series():
         Tensor.rand((1, 1, 16), dtype=dtypes.float32),
         lambda x: x
     )
-    assert explanation.shape == (1, 1, 14)
+    assert explanation.shape == (1, 1, 16)
