@@ -19,7 +19,7 @@ label = process_voc_label("examples/data/pascal_voc/2007_000032.png")
 
 
 explainer = Occlusion(model, TinyExplainTask.SEMANTIC_SEGMENTATION, (40, 40), (40, 40))
-explanation = explainer.explain(image, label, lambda x: x, lambda x, y: (x-y).square().mean())
+explanation = explainer.explain(image, label, lambda x: x, lambda x, y: (x - y).square().mean())
 explanation = explanation[0].numpy()
 explanation = np.array(cv2.resize(explanation, (512, 512)))
 

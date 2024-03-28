@@ -33,7 +33,7 @@ LABELS = [
     "sheep",
     "sofa",
     "train",
-    "tvmonitor"
+    "tvmonitor",
 ]
 
 

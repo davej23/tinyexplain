@@ -4,14 +4,15 @@ import numpy as np
 from tinygrad import Tensor, dtypes
 from tqdm import tqdm
 
-from tinyexplain.types import (PostProcessingFunction, ScoreFunction,
-                               TinyExplainTask, TinygradModel)
+from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
+from tinyexplain.utils.logging import Logger
 
 from .explainer import Explainer
 
 
 class Occlusion(Explainer):
     """Occlusion Explainer"""
+
     def __init__(
         self,
         model: TinygradModel,
@@ -28,24 +29,20 @@ class Occlusion(Explainer):
         self.score_fn: ScoreFunction = None  # type: ignore[assignment]
 
     def explain(
-        self,
-        inputs: Tensor,
-        targets: Tensor,
-        postprocess_fn: PostProcessingFunction,
-        score_fn: Optional[ScoreFunction] = None,
-        **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
     ) -> Tensor:
+
+        Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
 
         if score_fn is not None:
             self.score_fn = score_fn
         self.postprocess_fn = postprocess_fn
 
-        x_stride_idxs = [
-            x * self.patch_stride[0]
-            for x in range(
-                int((inputs.shape[2] - self.patch_size[0] + 1) / self.patch_stride[0])
-            )
-        ]
+        Logger.debug(f"{self._log_prefix} {self.score_fn=} {self.postprocess_fn=}")
+
+        x_stride_idxs = [x * self.patch_stride[0] for x in range(int((inputs.shape[2] - self.patch_size[0] + 1) / self.patch_stride[0]))]
+
+        Logger.debug(f"{self._log_prefix} {x_stride_idxs=}")
 
         if self.task in [
             TinyExplainTask.IMAGE_CLASSIFICATION,
@@ -53,13 +50,7 @@ class Occlusion(Explainer):
             TinyExplainTask.SEMANTIC_SEGMENTATION,
         ]:
             y_stride_idxs = [
-                y * self.patch_stride[1]
-                for y in range(
-                    int(
-                        (inputs.shape[3] - self.patch_size[1] + 1)
-                        / self.patch_stride[1]
-                    )
-                )
+                y * self.patch_stride[1] for y in range(int((inputs.shape[3] - self.patch_size[1] + 1) / self.patch_stride[1]))
             ]
             return self._2d_occlusion(inputs, targets, x_stride_idxs, y_stride_idxs)
 
@@ -72,7 +63,8 @@ class Occlusion(Explainer):
         x_stride_idxs: list[int],
         y_stride_idxs: list[int],
     ) -> Tensor:
-        explanation = Tensor.zeros((inputs.shape[0], *inputs.shape[2:])).to("CUDA")
+        Logger.debug(f"{self._log_prefix} Running 2D Occlusion {inputs=} {targets=}")
+        explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[2:])).to("CUDA")
         for x_stride_idx in tqdm(x_stride_idxs):
             for y_stride_idx in y_stride_idxs:
                 mask = np.zeros((inputs.shape[0], *inputs.shape[2:]))
@@ -93,14 +85,14 @@ class Occlusion(Explainer):
                     requires_grad=False,
                 )
 
-                explanation += (1.0 - score) * mask
+                explanations += (1.0 - score) * mask
 
-        return explanation
+        Logger.debug(f"{self._log_prefix} {explanations=}")
+        return explanations
 
-    def _1d_occlusion(
-        self, inputs: Tensor, targets: Tensor, stride_idxs: list[int]
-    ) -> Tensor:
-        explanation = Tensor.zeros(inputs.shape).to("CUDA")
+    def _1d_occlusion(self, inputs: Tensor, targets: Tensor, stride_idxs: list[int]) -> Tensor:
+        Logger.debug(f"{self._log_prefix} Running 1D Occlusion {inputs=} {targets=}")
+        explanations = Tensor.zeros(inputs.shape).to("CUDA")
         for stride_idx in tqdm(stride_idxs):
             mask = np.zeros(inputs.shape)
             mask[:, :, stride_idx : stride_idx + self.patch_size[0]] = 1
@@ -110,11 +102,7 @@ class Occlusion(Explainer):
 
             score = Occlusion.compute_score(
                 self.postprocess_fn,
-                (
-                    TinyExplainTask.TABULAR_DATA.score_fn
-                    if self.score_fn is None
-                    else self.score_fn
-                ),
+                (TinyExplainTask.TABULAR_DATA.score_fn if self.score_fn is None else self.score_fn),
                 self.task,
                 self.model,
                 inputs * mask,
@@ -122,6 +110,7 @@ class Occlusion(Explainer):
                 requires_grad=False,
             )
 
-            explanation += (1.0 - score) * mask
+            explanations += (1.0 - score) * mask
 
-        return explanation
+        Logger.debug(f"{self._log_prefix} {explanations=}")
+        return explanations

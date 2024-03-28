@@ -9,6 +9,7 @@ from .lime import Lime
 
 class KernelShap(Lime):
     """KernelShap Explainer"""
+
     def __init__(self, model: TinygradModel, task: TinyExplainTask, samples: int):
         super().__init__(
             model,
@@ -20,9 +21,7 @@ class KernelShap(Lime):
         )
 
     @staticmethod
-    def _kernel_shap_perturbation_function(
-        num_features: int, num_samples: int
-    ) -> Tensor:
+    def _kernel_shap_perturbation_function(num_features: int, num_samples: int) -> Tensor:
         # TODO this might not be quite right
         # feature_probs = KernelShap._get_feature_probabilities(num_features)
         sample_idxs = Tensor.randint((num_samples,), high=num_features)

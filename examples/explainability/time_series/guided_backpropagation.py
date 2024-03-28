@@ -16,7 +16,7 @@ x, y = load_mock_sine_dataset()
 
 
 explainer = GuidedBackpropagation(model, TinyExplainTask.TIME_SERIES)
-explanation = explainer.explain(x, y, lambda x: x, lambda x, y: (x-y).square().mean())
+explanation = explainer.explain(x, y, lambda x: x, lambda x, y: (x - y).square().mean())
 explanation = explanation[0].numpy()
 
 

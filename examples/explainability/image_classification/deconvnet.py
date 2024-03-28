@@ -20,7 +20,9 @@ train_images = train_images.repeat((1, 3, 1, 1))
 
 
 explainer = DeconvNet(model, TinyExplainTask.IMAGE_CLASSIFICATION)
-explanation = explainer.explain(train_images[0].unsqueeze(0), train_labels[0].unsqueeze(0), lambda x: x, lambda x, y: (x-y).square().mean())
+explanation = explainer.explain(
+    train_images[0].unsqueeze(0), train_labels[0].unsqueeze(0), lambda x: x, lambda x, y: (x - y).square().mean()
+)
 explanation = explanation[0].numpy()
 explanation = np.array(cv2.resize(explanation, (train_images.shape[2], train_images.shape[3])))
 
