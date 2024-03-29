@@ -2,10 +2,9 @@ from typing import Optional
 
 import cv2
 from tinygrad import Tensor
-from tqdm import tqdm
 
 from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
-from tinyexplain.utils.logging import Logger
+from tinyexplain.logging import Logger
 
 from .explainer import Explainer
 
@@ -37,7 +36,7 @@ class Rise(Explainer):
 
         Logger.debug(f"{self._log_prefix} {explanations=}")
 
-        for _ in tqdm(range(self.samples)):
+        for _ in range(self.samples):
             mask = Rise._generate_mask(self.random_mask_shape, inputs.shape[len(inputs.shape) - 2 :])
 
             Logger.debug(f"{self._log_prefix} {mask=}")

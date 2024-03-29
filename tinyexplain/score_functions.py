@@ -1,5 +1,5 @@
 from tinygrad import Tensor
-from tinyexplain.utils.logging import Logger
+from tinyexplain.logging import Logger
 
 
 def cce_score(predictions: Tensor, targets: Tensor) -> Tensor:

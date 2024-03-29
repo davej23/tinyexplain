@@ -3,7 +3,7 @@ from typing import Optional
 from tinygrad import Tensor
 
 from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
-from tinyexplain.utils.logging import Logger
+from tinyexplain.logging import Logger
 from tinyexplain.utils.overrides import overwrite_backward, overwrite_relu, revert_backward, revert_relu
 
 from .explainer import Explainer

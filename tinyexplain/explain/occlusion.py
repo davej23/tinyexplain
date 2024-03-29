@@ -2,10 +2,9 @@ from typing import Optional
 
 import numpy as np
 from tinygrad import Tensor, dtypes
-from tqdm import tqdm
 
 from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
-from tinyexplain.utils.logging import Logger
+from tinyexplain.logging import Logger
 
 from .explainer import Explainer
 
@@ -65,7 +64,7 @@ class Occlusion(Explainer):
     ) -> Tensor:
         Logger.debug(f"{self._log_prefix} Running 2D Occlusion {inputs=} {targets=}")
         explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[2:])).to("CUDA")
-        for x_stride_idx in tqdm(x_stride_idxs):
+        for x_stride_idx in x_stride_idxs:
             for y_stride_idx in y_stride_idxs:
                 mask = np.zeros((inputs.shape[0], *inputs.shape[2:]))
                 mask[
@@ -93,7 +92,7 @@ class Occlusion(Explainer):
     def _1d_occlusion(self, inputs: Tensor, targets: Tensor, stride_idxs: list[int]) -> Tensor:
         Logger.debug(f"{self._log_prefix} Running 1D Occlusion {inputs=} {targets=}")
         explanations = Tensor.zeros(inputs.shape).to("CUDA")
-        for stride_idx in tqdm(stride_idxs):
+        for stride_idx in stride_idxs:
             mask = np.zeros(inputs.shape)
             mask[:, :, stride_idx : stride_idx + self.patch_size[0]] = 1
             mask = Tensor(mask).to("CUDA").cast(dtypes.float32)

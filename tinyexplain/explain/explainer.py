@@ -5,7 +5,7 @@ from tinygrad import Tensor
 
 from tinyexplain.types import PostProcessingFunction, TinyExplainTask, TinygradModel
 
-from tinyexplain.utils.logging import Logger
+from tinyexplain.logging import Logger
 
 
 class Explainer(ABC):

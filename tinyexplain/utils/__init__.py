@@ -4,8 +4,6 @@ from tinygrad import Tensor, nn
 
 from tinyexplain.types import TinygradModel
 
-from .logging import Logger
-
 
 def count_model_parameters(model: TinygradModel) -> tuple[int, int]:
     layer_info = dict((l.flatten().shape[0], l.requires_grad) for l in nn.state.get_state_dict(model).values())
