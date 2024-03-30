@@ -5,11 +5,8 @@ from tinygrad import Tensor, nn
 from tinyexplain.types import TinygradModel
 
 
-def count_model_parameters(model: TinygradModel) -> tuple[int, int]:
-    layer_info = dict((l.flatten().shape[0], l.requires_grad) for l in nn.state.get_state_dict(model).values())
-    return sum(number_params if requires_grad else 0 for number_params, requires_grad in layer_info.items()), sum(
-        number_params if not requires_grad else 0 for number_params, requires_grad in layer_info.items()
-    )
+def count_model_parameters(model: TinygradModel) -> int:
+    return sum([l.flatten().shape[0] for _, l in nn.state.get_state_dict(model).items()])
 
 
 def summary(model: TinygradModel, x: Tensor) -> None:
