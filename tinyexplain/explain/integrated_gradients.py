@@ -18,10 +18,14 @@ class IntegratedGradients(Explainer):
         self.steps = steps
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         exp_steps = []
 

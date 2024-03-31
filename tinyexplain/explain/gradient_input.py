@@ -17,8 +17,14 @@ class GradientInput(Explainer):
         self.task = task
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
+
+        Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         Logger.debug(f"{self._log_prefix} Running score computation")
         GradientInput.compute_score(postprocess_fn, score_fn, self.task, self.model, inputs, targets)

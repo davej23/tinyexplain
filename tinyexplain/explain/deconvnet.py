@@ -19,12 +19,16 @@ class DeconvNet(Explainer):
         self.gbp = False
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
 
-        inputs_c = Tensor(inputs.numpy())
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+
+        inputs_c = Tensor(inputs.numpy()).to(device)
 
         Logger.debug(f"{self._log_prefix} Overwriting ReLU")
         overwrite_relu()

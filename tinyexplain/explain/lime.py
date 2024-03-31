@@ -38,10 +38,14 @@ class Lime(Explainer):
         self.interpretable_model = Ridge(2) if interpretable_model is None else interpretable_model
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         explanations = []
 
@@ -54,7 +58,9 @@ class Lime(Explainer):
             num_features = (mapper.max() + Tensor(1)).numpy().item()
 
             Logger.debug(f"{self._log_prefix} Running perturbation function")
-            batch_interpolated_samples = self.pert_function(num_features, self.samples).to("CUDA")  # type: ignore[call-arg]
+            batch_interpolated_samples = self.pert_function(num_features, self.samples)  # type: ignore[call-arg]
+
+            batch_interpolated_samples = batch_interpolated_samples.to(device)
 
             perturbed_targets = []
             similarities: list[Tensor] = []
@@ -64,7 +70,9 @@ class Lime(Explainer):
                 masks = interpolated_samples[:, mapper]
 
                 Logger.debug(f"{self._log_prefix} Generating perturbed samples")
-                perturbed_samples = Lime._apply_masks(inp[0], masks).unsqueeze(0).to("CUDA")
+                perturbed_samples = Lime._apply_masks(inp[0], masks).unsqueeze(0)
+
+                perturbed_samples = perturbed_samples.to(device)
 
                 Logger.debug(f"{self._log_prefix} Running score computation")
                 score = Lime.compute_score(

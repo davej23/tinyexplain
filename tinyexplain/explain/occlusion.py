@@ -28,10 +28,14 @@ class Occlusion(Explainer):
         self.score_fn: ScoreFunction = None  # type: ignore[assignment]
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         if score_fn is not None:
             self.score_fn = score_fn
@@ -61,9 +65,11 @@ class Occlusion(Explainer):
         targets: Tensor,
         x_stride_idxs: list[int],
         y_stride_idxs: list[int],
+        device: str
     ) -> Tensor:
         Logger.debug(f"{self._log_prefix} Running 2D Occlusion {inputs=} {targets=}")
-        explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[2:])).to("CUDA")
+        explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[2:])).to(device)
+
         for x_stride_idx in x_stride_idxs:
             for y_stride_idx in y_stride_idxs:
                 mask = np.zeros((inputs.shape[0], *inputs.shape[2:]))
@@ -72,7 +78,7 @@ class Occlusion(Explainer):
                     x_stride_idx : x_stride_idx + self.patch_size[0],
                     y_stride_idx : y_stride_idx + self.patch_size[1],
                 ] = 1
-                mask = Tensor(mask).to("CUDA").cast(dtypes.float32)
+                mask = Tensor(mask).cast(dtypes.float32).to(device)
 
                 score = Occlusion.compute_score(
                     self.postprocess_fn,
@@ -89,13 +95,14 @@ class Occlusion(Explainer):
         Logger.debug(f"{self._log_prefix} {explanations=}")
         return explanations
 
-    def _1d_occlusion(self, inputs: Tensor, targets: Tensor, stride_idxs: list[int]) -> Tensor:
+    def _1d_occlusion(self, inputs: Tensor, targets: Tensor, stride_idxs: list[int], device: str) -> Tensor:
         Logger.debug(f"{self._log_prefix} Running 1D Occlusion {inputs=} {targets=}")
-        explanations = Tensor.zeros(inputs.shape).to("CUDA")
+        explanations = Tensor.zeros(inputs.shape).to(device)
         for stride_idx in stride_idxs:
             mask = np.zeros(inputs.shape)
             mask[:, :, stride_idx : stride_idx + self.patch_size[0]] = 1
-            mask = Tensor(mask).to("CUDA").cast(dtypes.float32)
+            mask = Tensor(mask).cast(dtypes.float32).to(device)
+
             out = self.model(inputs * mask)
             out = self.postprocess_fn(out)
 

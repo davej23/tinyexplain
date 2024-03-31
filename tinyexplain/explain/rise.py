@@ -27,17 +27,21 @@ class Rise(Explainer):
         self.random_mask_shape = random_mask_shape
 
     def explain(
-        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[len(inputs.shape) - 2 :]))
 
         Logger.debug(f"{self._log_prefix} {explanations=}")
 
         for _ in range(self.samples):
-            mask = Rise._generate_mask(self.random_mask_shape, inputs.shape[len(inputs.shape) - 2 :])
+            mask = Rise._generate_mask(self.random_mask_shape, inputs.shape[len(inputs.shape) - 2 :]).to(device)
 
             Logger.debug(f"{self._log_prefix} {mask=}")
 

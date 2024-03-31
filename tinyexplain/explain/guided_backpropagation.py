@@ -17,4 +17,5 @@ class GuidedBackpropagation(DeconvNet):
     def explain(
         self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction, score_fn: Optional[ScoreFunction] = None, **kwargs
     ) -> Tensor:
+        Logger.debug("Running DeconvNet with `gbp=True`")
         return super().explain(inputs, targets, postprocess_fn, score_fn)

@@ -31,10 +31,14 @@ class GradCam(Explainer):
         targets: Tensor,
         postprocess_fn: PostProcessingFunction,
         score_fn: Optional[ScoreFunction] = None,
+        device: str = "CUDA",
         **kwargs,
     ) -> Tensor:
 
         Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         Logger.debug(f"{self._log_prefix} Overwriting {type(self.conv_layer).__call__}")
         overwrite_call(type(self.conv_layer))
