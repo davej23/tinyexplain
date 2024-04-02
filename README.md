@@ -32,11 +32,17 @@ Techniques adapted for tinygrad from [Xplique](https://github.com/deel-ai/xpliqu
 
 `pip install tinyexplain`  **Coming Soon**
 
-`git clone https://github.com/davej23/tinyexplain`
-`cd tinyexplain/`
-`pip install .`  **Install library**
-`pip install .[dev]`  **Install dev requirements**
-`pip install .[examples]`  **Install examples requirements**
+```bash
+git clone https://github.com/davej23/tinyexplain
+
+cd tinyexplain/
+
+pip install .  # **Install library**
+
+pip install .[dev]  # **Install dev requirements**
+
+pip install .[examples]  # **Install examples requirements**
+```
 
 ## Usage
 
