@@ -1,31 +1,40 @@
-[tool.poetry]
+[project]
 name = "tinyexplain"
-version = "0.1.0"
 description = "Explainable AI Toolkit for tinygrad"
-authors = ["davej23"]
-license = "MIT"
-documentation = "https://github.com/davej23/tinyexplain/docs"
+requires-python = ">=3.10"
+authors = [{name = "davej23", email = "email@example.com"}]
+license = {file = "LICENSE"}
 readme = "README.md"
+dynamic = ["version"]
 
-[tool.poetry.dependencies]
-python = ">=3.7"
-tinygrad = ">=0.8"
-matplotlib = ">=3.8"
-opencv-python = ">=4.9"
+dependencies = [
+    "numpy>=1.26",
+    "tinygrad @ git+https://github.com/tinygrad/tinygrad.git",
+    "matplotlib>=3.8",
+    "opencv-python>=4.9",
+    "scikit-learn>=1.4",
+    "scikit-image>=0.22",
+    "requests>=2.31"
+]
 
-[tool.poetry.dev-dependencies]
-pytest-cov = "^3.0.0"
-pytest = "^7.1.2"
-black = "^24.3"
-pylint = "^3.1"
-mypy = "^1.9"
-codecov = "^2.1.11"
-sphinx = "^5.0.1"
-sphinx-autodoc-typehints = "^1.11.1"
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.1.2",
+    "black>=24.3",
+    "pylint>=3.1",
+    "mypy>=1.9"
+]
+examples = [
+    "pyunpack>=0.3",
+    "patool>=2.0"
+]
 
 [tool.black]
 line-length = 140
 
+[tool.setuptools.dynamic]
+version = {attr = "tinyexplain.__version__"}
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"

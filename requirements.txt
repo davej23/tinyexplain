@@ -1,5 +1,0 @@
-tinygrad @ git+https://github.com/tinygrad/tinygrad
-matplotlib
-opencv-python
-scikit-learn
-scikit-image
