@@ -20,7 +20,7 @@ class GradCam(Explainer):
         self.task = task
 
         # Get layer in model
-        self.conv_layer = get_layer(conv_layer, self.model)
+        self.conv_layer = get_layer(self.model, conv_layer)
 
         if not isinstance(self.conv_layer, tuple(TINYGRAD_LAYERS)):
             raise ValueError(f"layer {self.conv_layer} is not a Tinygrad layer: {TINYGRAD_LAYERS}")

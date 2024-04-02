@@ -13,7 +13,7 @@ def is_tinygrad_layer(layer: Any) -> bool:
     return layer in TINYGRAD_LAYERS
 
 
-def get_layer(layer_name: str, model: TinygradModel) -> Any:
+def get_layer(model: TinygradModel, layer_name: str) -> Any:
     model_var = dict((str(v), k) for k, v in locals().items())[str(model)]
     return eval(f"{model_var}.{layer_name}")
 

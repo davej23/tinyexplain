@@ -55,9 +55,9 @@ class Occlusion(Explainer):
             y_stride_idxs = [
                 y * self.patch_stride[1] for y in range(int((inputs.shape[3] - self.patch_size[1] + 1) / self.patch_stride[1]))
             ]
-            return self._2d_occlusion(inputs, targets, x_stride_idxs, y_stride_idxs)
+            return self._2d_occlusion(inputs, targets, x_stride_idxs, y_stride_idxs, device)
 
-        return self._1d_occlusion(inputs, targets, x_stride_idxs)
+        return self._1d_occlusion(inputs, targets, x_stride_idxs, device)
 
     def _2d_occlusion(
         self,

@@ -32,6 +32,9 @@ examples = [
 [tool.black]
 line-length = 140
 
+[tool.pytest.ini_options]
+addopts = "--cov-config=.coveragerc --cov=tinyexplain"
+
 [tool.setuptools.dynamic]
 version = {attr = "tinyexplain.__version__"}
 

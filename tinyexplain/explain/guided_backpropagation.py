@@ -2,6 +2,7 @@ from typing import Optional
 
 from tinygrad import Tensor
 
+from tinyexplain.logging import Logger
 from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
 
 from .deconvnet import DeconvNet

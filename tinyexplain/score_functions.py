@@ -17,7 +17,8 @@ def mae_score(predictions: Tensor, targets: Tensor) -> Tensor:
     return (predictions - targets).abs().mean()
 
 
-def drise_score(predictions: Tensor, targets: Tensor, height: int, width: int) -> Tensor:
+def drise_score(predictions: Tensor, targets: Tensor, height: int,
+                width: int, skip_xcycwh_to_xyxy: bool = False) -> Tensor:
     """Get DRISE score for predicted bounding boxes versus ground truth bounding boxes
     Expects:
         predictions : (B, 5+NC, N)
@@ -30,18 +31,25 @@ def drise_score(predictions: Tensor, targets: Tensor, height: int, width: int) -
 
     predictions = relative_to_absolute(predictions, height, width)
     targets = relative_to_absolute(targets, height, width)
-    predictions = xcycwh_to_xyxy(predictions)
-    targets = xcycwh_to_xyxy(targets)
+
+    if not skip_xcycwh_to_xyxy:
+        predictions = xcycwh_to_xyxy(predictions)
+        targets = xcycwh_to_xyxy(targets)
 
     for b in range(predictions.shape[0]):  # for each in batch
         Logger.debug(f"drise_score: scoring prediction {b+1}/{predictions.shape[0]}")
+
         ious = iou_score(predictions[b], targets[b])
         Logger.debug(f"drise_score: {ious=}")
-        objectness = predictions[b, 4, :].unsqueeze(0)
+
+        objectness = predictions[b, 4, :].unsqueeze(0) if predictions.shape[1] != targets.shape[1] else predictions[b, 4:, :].max().unsqueeze(0)
         Logger.debug(f"drise_score: {objectness=}")
-        classification_similarity = (predictions[b, 5:, :] * targets[b, 4:, :]).sum() / (
-            (predictions[b, 5:, :].dot(predictions[b, 5:, :].transpose())).sum()
-            * (targets[b, 4:, :].dot(targets[b, 4:, :].transpose())).sum()
+
+        clf_probs = predictions[b, 5:, :] if predictions.shape[1] != targets.shape[1] else predictions[b, 4:, :]
+
+        classification_similarity = (clf_probs * targets[b, 4:, :]).sum() / (
+            clf_probs.transpose().dot(clf_probs).sqrt()
+            * targets[b, 4:, :].transpose().dot(targets[b, 4:, :]).sqrt()
         )
         Logger.debug(f"drise_score: {classification_similarity=}")
 
@@ -53,7 +61,13 @@ def drise_score(predictions: Tensor, targets: Tensor, height: int, width: int) -
 
 def xcycwh_to_xyxy(xcycwh: Tensor) -> Tensor:
     assert len(xcycwh.shape) == 3
+    assert xcycwh.shape[1] >= 4
     Logger.debug(f"xcycwh_to_xyxy: {xcycwh=}")
+
+    # This isn't guaranteed
+    # if xcycwh[:, 0, :] < xcycwh[:, 2, :] and xcycwh[:, 1, :] < xcycwh[:, 3, :]:
+    #     Logger.debug(f"xcycwh_to_xyxy: coordinates already in xyxy format")
+    #     return xcycwh
 
     xyxy = xcycwh[:, 0, :] - 0.5 * xcycwh[:, 2, :]
     xyxy = xyxy.cat(xcycwh[:, 1, :] - 0.5 * xcycwh[:, 3, :], dim=1)
@@ -62,13 +76,18 @@ def xcycwh_to_xyxy(xcycwh: Tensor) -> Tensor:
     xyxy = xyxy.unsqueeze(-1)
     xyxy = xyxy.cat(xcycwh[:, 4:, :], dim=1)
 
-    Logger.debug(f"drise_score: {xyxy=}")
-    return xcycwh
+    Logger.debug(f"xcycwh_to_xyxy: {xyxy=}")
+    return xyxy
 
 
 def relative_to_absolute(coords: Tensor, height: int, width: int) -> Tensor:
     assert len(coords.shape) == 3
     Logger.debug(f"relative_to_absolute: {coords=} {height=} {width=}")
+
+    if coords[:, :4, :].max().numpy() > 1.0:
+        Logger.debug(f"relative_to_absolute: coords already in absolute format")
+        return coords
+
     new_coords = coords[:, 0, :] * width
     new_coords = new_coords.cat(coords[:, 1, :] * height, dim=1)
     new_coords = new_coords.cat(coords[:, 2, :] * width, dim=1)
@@ -106,15 +125,15 @@ def iou_score(predictions: Tensor, targets: Tensor) -> Tensor:  # pylint: disabl
             targ = targets_c[j]
             left = pred[0].maximum(targ[0])
             bottom = pred[1].maximum(targ[1])
-            right = pred[2].maximum(targ[2])
-            top = pred[3].maximum(targ[3])
+            right = pred[2].minimum(targ[2])
+            top = pred[3].minimum(targ[3])
 
             inter = (right - left).maximum(0) * (top - bottom).maximum(0)
             pred_area = (pred[2] - pred[0]) * (pred[3] - pred[1])
             targ_area = (targ[2] - targ[0]) * (targ[3] - targ[1])
             union = pred_area + targ_area - inter
 
-            iou = inter / (union + 1e6)
+            iou = inter / (union + 1e-6)
             if (iou > best_iou).numpy():
                 best_iou = iou
 
