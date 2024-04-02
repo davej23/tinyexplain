@@ -17,18 +17,10 @@ class UNet:
 
         self.max_pool = lambda x: x.max_pool2d(kernel_size=2, stride=2)
 
-        self.conv_t_1 = nn.ConvTranspose2d(
-            16 * self.base_filters, 8 * self.base_filters, 2, 2
-        )
-        self.conv_t_2 = nn.ConvTranspose2d(
-            8 * self.base_filters, 4 * self.base_filters, 2, 2
-        )
-        self.conv_t_3 = nn.ConvTranspose2d(
-            4 * self.base_filters, 2 * self.base_filters, 2, 2
-        )
-        self.conv_t_4 = nn.ConvTranspose2d(
-            2 * self.base_filters, self.base_filters, 2, 2
-        )
+        self.conv_t_1 = nn.ConvTranspose2d(16 * self.base_filters, 8 * self.base_filters, 2, 2)
+        self.conv_t_2 = nn.ConvTranspose2d(8 * self.base_filters, 4 * self.base_filters, 2, 2)
+        self.conv_t_3 = nn.ConvTranspose2d(4 * self.base_filters, 2 * self.base_filters, 2, 2)
+        self.conv_t_4 = nn.ConvTranspose2d(2 * self.base_filters, self.base_filters, 2, 2)
 
         self.out = nn.Conv2d(self.base_filters, out_classes, 1)
 

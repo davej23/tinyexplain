@@ -15,7 +15,7 @@ x, y = Tensor([22.0, 7.5, 1.0, 0.0]).reshape((1, 1, 4)), Tensor([0.0]).reshape((
 
 
 explainer = GradientInput(model, TinyExplainTask.TABULAR_DATA)
-explanation = explainer.explain(x, y, lambda x: x, lambda x, y: (x-y).square().mean())
+explanation = explainer.explain(x, y, lambda x: x, lambda x, y: (x - y).square().mean())
 explanation = explanation[0].numpy()
 
 

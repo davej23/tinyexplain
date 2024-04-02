@@ -4,14 +4,15 @@ from skimage.segmentation import felzenszwalb
 from sklearn.linear_model import Ridge
 from tinygrad import Tensor
 
-from tinyexplain.types import (PostProcessingFunction, ScoreFunction,
-                               TinyExplainTask, TinygradModel)
+from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
+from tinyexplain.logging import Logger
 
 from .explainer import Explainer
 
 
 class Lime(Explainer):
     """Lime Explainer"""
+
     def __init__(
         self,
         model: TinygradModel,
@@ -28,30 +29,23 @@ class Lime(Explainer):
         self.samples = samples
 
         self.sim_kernel: Callable[[Tensor, Tensor, Tensor], Tensor] = (
-            Lime._get_euclidean_weighting_kernel()
-            if weighting_kernel is None
-            else weighting_kernel
+            Lime._get_euclidean_weighting_kernel() if weighting_kernel is None else weighting_kernel
         )
-        self.pert_function: Callable[[Any], Tensor] = Lime._default_perturbation_function \
-                                                      if perturbation_function is None \
-                                                      else perturbation_function  # type: ignore[assignment]
-        self.seg_fn = (
-            Lime._get_segmentation_function(self.task)
-            if interpret_map is None
-            else interpret_map
-        )
-        self.interpretable_model = (
-            Ridge(2) if interpretable_model is None else interpretable_model
-        )
+        self.pert_function: Callable[[Any], Tensor] = (
+            Lime._default_perturbation_function if perturbation_function is None else perturbation_function
+        )  # type: ignore[assignment]
+        self.seg_fn = Lime._get_segmentation_function(self.task) if interpret_map is None else interpret_map
+        self.interpretable_model = Ridge(2) if interpretable_model is None else interpretable_model
 
     def explain(
-        self,
-        inputs: Tensor,
-        targets: Tensor,
-        postprocess_fn: PostProcessingFunction,
-        score_fn: Optional[ScoreFunction] = None,
-        **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
+
+        Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         explanations = []
 
@@ -59,19 +53,28 @@ class Lime(Explainer):
             inp = inp.unsqueeze(0)
             targ = targ.unsqueeze(0)
 
-            mapper = self.seg_fn(inp)  # same sz as inp, segmented mask
+            Logger.debug(f"{self._log_prefix} Running segmentation function")
+            mapper = self.seg_fn(inp)
             num_features = (mapper.max() + Tensor(1)).numpy().item()
-            batch_interpolated_samples = self.pert_function(num_features, self.samples).to("CUDA")  # type: ignore[call-arg]
+
+            Logger.debug(f"{self._log_prefix} Running perturbation function")
+            batch_interpolated_samples = self.pert_function(num_features, self.samples)  # type: ignore[call-arg]
+
+            batch_interpolated_samples = batch_interpolated_samples.to(device)
 
             perturbed_targets = []
             similarities: list[Tensor] = []
             for interpolated_samples in batch_interpolated_samples:
                 interpolated_samples = interpolated_samples.unsqueeze(0)
+                Logger.debug(f"{self._log_prefix} Getting mask from interpolated sample")
                 masks = interpolated_samples[:, mapper]
-                perturbed_samples = (
-                    Lime._apply_masks(inp[0], masks).unsqueeze(0).to("CUDA")
-                )
 
+                Logger.debug(f"{self._log_prefix} Generating perturbed samples")
+                perturbed_samples = Lime._apply_masks(inp[0], masks).unsqueeze(0)
+
+                perturbed_samples = perturbed_samples.to(device)
+
+                Logger.debug(f"{self._log_prefix} Running score computation")
                 score = Lime.compute_score(
                     postprocess_fn,
                     score_fn,
@@ -82,17 +85,20 @@ class Lime(Explainer):
                 )
 
                 perturbed_targets.append(score)
-                similarities.append(
-                    self.sim_kernel(inp, interpolated_samples, perturbed_samples)
-                )
+
+                Logger.debug(f"{self._log_prefix} Running similarity kernel")
+                similarities.append(self.sim_kernel(inp, interpolated_samples, perturbed_samples))
 
             perturbed_targets_t = Tensor.stack(perturbed_targets)
             similarities_t = Tensor.stack(similarities)
 
+            Logger.debug(f"{self._log_prefix} {perturbed_targets_t=} {similarities_t=}")
+
             if similarities_t.max().numpy() == 0 and similarities_t.min().numpy() == 0:
-                print("similarities are zeros")
+                Logger.info(f"{self._log_prefix} Similarities are zeros")
                 explanation = Tensor.zeros(masks.shape)[0]
             else:
+                Logger.debug(f"{self._log_prefix} Fitting interpretable model")
                 self.interpretable_model.fit(
                     batch_interpolated_samples.numpy(),
                     perturbed_targets_t.numpy(),
@@ -103,9 +109,13 @@ class Lime(Explainer):
 
                 explanation = explanation[:, mapper][0]
 
+                Logger.debug(f"{self._log_prefix} {explanation=}")
+
             explanations.append(explanation)
 
-        return Tensor.stack(explanations)
+        explanations = Tensor.stack(explanations)
+        Logger.debug(f"{self._log_prefix} {explanations=}")
+        return explanations
 
     @staticmethod
     def _image_segmentation(x: Tensor) -> Tensor:
@@ -118,6 +128,7 @@ class Lime(Explainer):
             TinyExplainTask.IMAGE_CLASSIFICATION,
             TinyExplainTask.SEMANTIC_SEGMENTATION,
         ]:
+            Logger.debug(f"_get_segmentation_function: Found computer vision task, returning Lime._image_segmentation")
             return Lime._image_segmentation
 
         # TODO add other tasks
@@ -125,24 +136,24 @@ class Lime(Explainer):
 
     @staticmethod
     def _default_perturbation_function(num_features: int, num_samples: int) -> Tensor:
+        Logger.debug(f"_default_perturbation_function: {num_features=} {num_samples=}")
         probs = Tensor.ones(num_features) * 0.5
         sampling = Tensor.uniform((num_samples, num_features))
         return Tensor(probs.numpy() > sampling.numpy())
 
     @staticmethod
     def _apply_masks(x: Tensor, masks: Tensor) -> Tensor:
-        rep_x = x.repeat(
-            (masks.shape[0], 1, 1) if len(masks.shape) == 3 else (masks.shape[0], 1)
-        )
+        Logger.debug(f"_apply_masks: {x=} {masks=}")
+        rep_x = x.repeat((masks.shape[0], 1, 1) if len(masks.shape) == 3 else (masks.shape[0], 1))
         return rep_x * masks
 
     @staticmethod
     def _get_euclidean_weighting_kernel(
         kernel_width: int = 45,
     ) -> Callable[[Tensor, Tensor, Tensor], Tensor]:
-        def _euclidean_weighting_kernel(
-            inputs: Tensor, interpolated_samples: Tensor, perturbed_samples: Tensor
-        ) -> Tensor:
+        Logger.debug(f"_get_euclidean_weighting_kernel: {kernel_width=}")
+
+        def _euclidean_weighting_kernel(inputs: Tensor, interpolated_samples: Tensor, perturbed_samples: Tensor) -> Tensor:
             rep_x = inputs.repeat((interpolated_samples.shape[0], 1, 1, 1))
             flat_xs = rep_x.flatten()
             flat_samps = perturbed_samples.flatten()

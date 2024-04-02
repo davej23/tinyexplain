@@ -4,8 +4,7 @@ from typing import Any, Callable
 import numpy.typing as npt
 from tinygrad import Tensor
 
-from tinyexplain.task_functions import (cce_score, drise_score, iou_score,
-                                        mse_score)
+from tinyexplain.score_functions import cce_score, drise_score, iou_score, mse_score
 
 TinygradModel = Callable[[Tensor], Tensor]
 NumpyArray = npt.NDArray[Any]

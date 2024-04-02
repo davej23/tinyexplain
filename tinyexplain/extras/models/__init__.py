@@ -1,5 +1,4 @@
-from .fashion_mnist_classifier import (FashionMnistCnnClassifier,
-                                       FashionMnistLinearClassifier)
+from .fashion_mnist_classifier import FashionMnistCnnClassifier, FashionMnistLinearClassifier
 from .tabular_data_model import TabularDataModel
 from .time_series_model import TimeSeriesModel
 from .unet import UNet

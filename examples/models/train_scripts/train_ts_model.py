@@ -16,14 +16,14 @@ def create_generator():
     x_batch = None
     y_batch = None
 
-    for i in range(data.shape[0]-SEQUENCE_LENGTH):
+    for i in range(data.shape[0] - SEQUENCE_LENGTH):
         if x_batch is not None and x_batch.shape[0] % BATCH_SIZE == 0:
             yield x_batch.unsqueeze(1), y_batch.unsqueeze(1)
             x_batch = None
             y_batch = None
         else:
-            x = data[i:i+SEQUENCE_LENGTH].unsqueeze(0)
-            y = data[i+1:i+SEQUENCE_LENGTH+1].unsqueeze(0)
+            x = data[i : i + SEQUENCE_LENGTH].unsqueeze(0)
+            y = data[i + 1 : i + SEQUENCE_LENGTH + 1].unsqueeze(0)
             x_batch = x if x_batch is None else x_batch.cat(x)
             y_batch = y if y_batch is None else y_batch.cat(y)
 

@@ -3,8 +3,7 @@ from unittest.mock import MagicMock
 
 from tinygrad import Tensor, nn
 
-from tinyexplain.utils.overrides import (RELUS, overwrite_backward,
-                                         revert_backward)
+from tinyexplain.utils.overrides import RELUS, overwrite_backward, revert_backward
 
 
 class TestModel:

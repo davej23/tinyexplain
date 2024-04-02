@@ -2,16 +2,16 @@ from typing import Optional
 
 import cv2
 from tinygrad import Tensor
-from tqdm import tqdm
 
-from tinyexplain.types import (PostProcessingFunction, ScoreFunction,
-                               TinyExplainTask, TinygradModel)
+from tinyexplain.types import PostProcessingFunction, ScoreFunction, TinyExplainTask, TinygradModel
+from tinyexplain.logging import Logger
 
 from .explainer import Explainer
 
 
 class Rise(Explainer):
     """Rise Explainer"""
+
     def __init__(
         self,
         model: TinygradModel,
@@ -27,29 +27,31 @@ class Rise(Explainer):
         self.random_mask_shape = random_mask_shape
 
     def explain(
-        self,
-        inputs: Tensor,
-        targets: Tensor,
-        postprocess_fn: PostProcessingFunction,
-        score_fn: Optional[ScoreFunction] = None,
-        **kwargs
+        self, inputs: Tensor, targets: Tensor, postprocess_fn: PostProcessingFunction,
+        score_fn: Optional[ScoreFunction] = None, device: str = "CUDA", **kwargs
     ) -> Tensor:
 
-        explanation = Tensor.zeros(
-            (inputs.shape[0], *inputs.shape[len(inputs.shape) - 2 :])
-        )
+        Logger.debug(f"{self._log_prefix} {inputs=} {targets=}")
 
-        for _ in tqdm(range(self.samples)):
-            mask = Rise._generate_mask(
-                self.random_mask_shape, inputs.shape[len(inputs.shape) - 2 :]
-            )
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+
+        explanations = Tensor.zeros((inputs.shape[0], *inputs.shape[len(inputs.shape) - 2 :]))
+
+        Logger.debug(f"{self._log_prefix} {explanations=}")
+
+        for _ in range(self.samples):
+            mask = Rise._generate_mask(self.random_mask_shape, inputs.shape[len(inputs.shape) - 2 :]).to(device)
+
+            Logger.debug(f"{self._log_prefix} {mask=}")
 
             masked_inputs = inputs * mask.repeat(
-                (inputs.shape[0], inputs.shape[1], 1, 1)
-                if len(inputs.shape) == 4
-                else (inputs.shape[0], inputs.shape[1], 1)
+                (inputs.shape[0], inputs.shape[1], 1, 1) if len(inputs.shape) == 4 else (inputs.shape[0], inputs.shape[1], 1)
             )
 
+            Logger.debug(f"{self._log_prefix} {masked_inputs=}")
+
+            Logger.debug(f"{self._log_prefix} Running score computation")
             score = Rise.compute_score(
                 postprocess_fn,
                 score_fn,
@@ -61,9 +63,10 @@ class Rise(Explainer):
             )
 
             mask = mask.unsqueeze(0)
-            explanation += (score * mask).sum(0) / (mask.sum(0) + 1e6)
+            explanations += (score * mask).sum(0) / (mask.sum(0) + 1e6)
 
-        return explanation
+        Logger.debug(f"{self._log_prefix} {explanations=}")
+        return explanations
 
     @staticmethod
     def _generate_mask(
