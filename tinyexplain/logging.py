@@ -3,7 +3,7 @@ from os import getenv
 import logging
 
 
-logging.basicConfig(level=getenv("LOGLEVEL", "INFO"), format="%(asctime)-10s [ %(levelname)-8s ]  %(message)s")
+logging.basicConfig(level=getenv("TELOGLEVEL", "INFO"), format="%(asctime)-10s [ %(levelname)-8s ]  %(message)s")
 
 
 class Logger:
