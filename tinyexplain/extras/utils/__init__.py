@@ -1,14 +1,17 @@
 import gzip
+import json
 from pathlib import Path
+from typing import Any
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import requests
-from tinygrad import Tensor, dtypes
+from tinygrad import Tensor, dtypes, nn
 
 from tinyexplain.extras.models.yolov8 import non_max_suppression  # type: ignore[attr-defined]
+from tinyexplain.utils import TinygradModel
 
 
 def load_fashion_mnist_dataset() -> tuple[Tensor, Tensor]:
@@ -76,3 +79,35 @@ def yolov8_tbo(x: Tensor) -> Tensor:  # This is much faster
     # x_fast = x_fast.permute((0, 2, 1))  # permute to (B, N, 5 + NC)
 
     return x_fast
+
+
+def save_torch_state_dict(model: torch.nn.Module, filename: str) -> None:
+    """Save a PyTorch model state dict to file"""
+
+    def custom_tensor_serialiser(obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.detach().cpu().numpy().tolist()
+
+        return obj.__dict__
+
+    with open(filename, "w") as state_dict:
+        json.dump(model.state_dict(), state_dict, default=custom_tensor_serialiser)
+
+
+def load_state_dict_from_torch(model: TinygradModel, state_dict_filename: str) -> TinygradModel:
+    """Load PyTorch model state dict into Tinygrad model"""
+
+    with open(state_dict_filename, "r") as state_dict:
+        torch_state_dict = json.load(state_dict)
+
+    def convert_to_tinygrad_state_dict(x: dict[str, Any]):
+        for k, v in x.items():
+            if isinstance(v, list):
+                x[k] = Tensor(v)
+            if isinstance(v, dict):
+                x[k] = state_dict_to_tensor(v)
+        return x
+
+    tinygrad_state_dict = convert_to_tinygrad_state_dict(torch_state_dict)
+    nn.state.load_state_dict(model, tinygrad_state_dict)
+    return model
